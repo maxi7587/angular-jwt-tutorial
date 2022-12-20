@@ -2,13 +2,13 @@
 Tutorial sobre Angular + JWT (traducción/adaptación de https://www.positronx.io/angular-jwt-user-authentication-tutorial/) 
 
 ## Introducción
-En esta publicación, vamos a crear un sistema de autenticación de usuario seguro en Angular utilizando JSON Web Token (JWT).
+En este tutorial vamos a crear un sistema de autenticación de usuario seguro en Angular utilizando JSON Web Token (JWT). Este proceso, por lo general se realiza por partes, agregando una funcionalidad a la vez. En un proyecto real, no seguiremos el mismo orden que se dispone en el tutorial, pero por razones de claridad y brevedad, realizaremos el proceso trabajando en un archivo a la vez hasta completar el contenido de esa clase, conociendo la totalidad de lo que queremos implementar y cómo hacerlo.
 
-Como back-end para el sistema de autenticación de usuario JWT, clonaremos una API RESTful sencilla desarrollada utilizando node, express y mongoDB (quienes estén interesados pueden visitar [este tutorial](https://www.positronx.io/build-secure-jwt-token-based-authentication-api-with-node/)).
+Como back-end para el sistema de autenticación de usuario, clonaremos una API RESTful sencilla desarrollada utilizando node, express y mongoDB (quienes estén interesados en cómo realizarla pueden visitar [este tutorial](https://www.positronx.io/build-secure-jwt-token-based-authentication-api-with-node/)).
 
 ## ¿Qué es JWT (token web JSON)?
 
-JWT se refiere a JSON Web Token. Es un token en forma de string validado y generado por un servidor web. Este token ayuda transferir los datos de forma segura entre el cliente y el servidor de la siguiente manera:
+JWT se refiere a JSON Web Token. Es un token en forma de string validado y generado por un servidor web. Podmeos utilizar este token para transferir los datos de forma segura entre el cliente y el servidor, implemnetando y flujo que funcione de la siguiente manera:
 1. La información del usuario (nombre de usuario y contraseña) se envía al servidor mediante una solicitud HTTP POST al servidor web.
 2. El servidor web valida la información del usuario, crea un token y lo envía de regreso al cliente.
 3. El cliente almacena ese token en el almacenamiento local o en una sesión y, en las próximas llamadas HTTP, lo agrega en el encabezado (headers).
@@ -18,11 +18,11 @@ JWT se refiere a JSON Web Token. Es un token en forma de string validado y gener
 
 Se pretende realizar un proyecto que cumpla con los siguientes requisitos:
 - El usuario debe poder iniciar sesión
-- El usuario poder registrarse
+- El usuario debe poder registrarse
 - Ocultar/mostrar elementos del menú según el estado de autenticación
 - Restringir el acceso del usuario a la página de perfil de usuario cuando el usuario no haya iniciado sesión.
 - Almacenar el token JWT en el almacenamiento local para administrar la sesión del usuario en Angular
-- Enviar el token obtenido en el proceso de autenticación en un encabezado de autorización usando la clase HttpInterceptor.
+- Enviar el token obtenido en el proceso de autenticación en un encabezado de autorización usando la clase `HttpInterceptor`.
 
 ## Estructura de la aplicación
 
@@ -42,7 +42,7 @@ Como back end, utilizaremos una pequeña API REST que provee las siguientes func
 - Inicio de sesión
 - Almacenar y obtener datos del usuario
 
-Antes de clonar y ejecutar el Back End, es neceario instalar MongoDB. Te recomiendo seguir esta guía dependiendo de tu sistema operativo.
+Antes de clonar y ejecutar el Back End, es neceario instalar MongoDB. Te recomiendo seguir [esta guía](https://www.mongodb.com/docs/manual/administration/install-community/) dependiendo de tu sistema operativo.
 
 Ahora sí, para clonar y ejecutar el proyecto, puedes seguir estos pasos desde la terminal:
 1. Clonar el repositorio con el comando `git clone https://github.com/SinghDigamber/node-token-based-authentication.git`
@@ -53,9 +53,21 @@ Ahora sí, para clonar y ejecutar el proyecto, puedes seguir estos pasos desde l
 7. Agregar el comando nodemon dentro de la propiedad scripts en el archivo `package.json` (ejemplo: `"scripts": {... "nodemon": "nodemon"}`).
 8. Ejecutar el servidor con el comando `npm run nodemon`.
 
+A continuación se detallan la interfaz expuesta por esta API que acabamos de ejecutar:
+|         Métodos             |        URL de la API       |
+|:---------------------------:|:--------------------------:|
+| GET (Lista de usuarios)     | /api                       |
+| POST (Iniciar sesión)       | /api/signin                |
+| POST (Registrarse)          | /api/register-user         |
+| GET (Perfil de usuario)     | /api/user-profile/:id      |
+| PUT (Actualizar Usuario)    | /api/update-user/:id       |
+| ELIMINAR (Eliminar Usuario) | /api/delete-user/:id       |
+
+utilizaremos estos endpoints en nuestro Front End para generar, validar y mostrar la información de los usuarios.
+
 ### 2. Inicializar el proyecto utilizando Angular CLI
 
-Para inicializar el proyecto Angular, primero debemos instalar el CLI de Angular:
+Ahora que ya tenemos el back End funcionando, podemos comenzar a trabajar en nuestra app. Para inicializar el proyecto Angular, primero debemos instalar el CLI de Angular:
 ```
 npm install -g @angular/cli
 ```
@@ -65,18 +77,26 @@ Una vez instalado el CLI de Angular, podemos inicializar el proyecto con el sigu
 ng new angular-meanstack-authentication
 ```
 
-Después, nos dirijiros al diretorio del proyecto:
+Nos preguntará si deseamos agregar el enrutador de angular, debemos indicar que sí (aunque también puede hacerse después).
+
+Una vez terminada la generación, nos dirijiros al diretorio del proyecto:
 ```
 cd angular-meanstack-authentication
+```
+
+Para confirmar que el proyecto se generó correctamente, podemos ejecutar el siguiente comando y abrir el sitio en el navegador (utilizando la URL `localhost:4200`):
+```
+ng serve
 ```
 
 ### 3. Agregamos algunas dependencias necesarias
 
 Para nuestro proyecto utilizaremos bootstrap, por lo que primero debemos instalarlo:
-
+```
 npm install bootstrap
+```
 
-Una vez instalado, debemos agregar la ruta de la hoja de estilos de Bootstrap al archivo de confguración `angular.json`:
+Una vez instalado, debemos agregar la ruta de la hoja de estilos de Bootstrap al [archivo de confguración del proyecto](https://angular.io/guide/workspace-config) `angular.json`:
 ```
 "styles": [
   "node_modules/bootstrap/dist/css/bootstrap.min.css",
@@ -111,6 +131,8 @@ ng g c components/signin
 ng g c components/signup
 ng g c components/user-profile
 ```
+
+Esto generará 3 componentes dentro de la carpeta components, con sus repectivos controladores, templates, hojas de estilos y archivos de test.
 
 ### 5. Creamos el servicio de autenticación y la clase de usuario
 
@@ -466,12 +488,14 @@ Para esto, editaremos el contenido del archivo signup.component.html con el sigu
 </div>
 ```
 
-En este bloque, dentro e los atributos de las etiquetas HTML, hemos utilizado las siguientes directivas de Angular (Directives):
+En este bloque, dentro de los atributos de las etiquetas HTML, hemos utilizado las siguientes directivas de Angular (Directives):
 - `formGroup`, para conectar el formulario con el modelo de datos definido en nuestro controlador (mediante el método `fb.group`)
 - `ngSubmit`, para ejecutar una función específica cuando se envía en formulario (en nuestro caso, `registerUser`)
 - `formControlName`, para enlazar cada uno de los inputs con la propiedad correspondiente en el modelo definido en el controlador.
 
 En la documentación de [FormsModule](https://angular.io/api/forms/FormsModule) y [ReactiveFormsModule](https://angular.io/guide/reactive-forms) hay información más detallada sobre estas y otras directivas que podemos utilizar en los formularios.
+
+También utilizamos data bindings (`()`, `[]`, `[()]`) para enviar información a los componentes hijos utilizados (en este caso, a la etiqueta form). Podemos utilizar este tipo de bindings para, por ejemplo, pasar valores desde el controlador a los atributos de las  etiquetas HTML, o asignarles el resultado de una expresión. [Este enlace](https://angular.io/guide/binding-syntax) te llevará al sitio oficial de Angular sobre data binding. 
 
 #### Componente de autenticación (login)
 
@@ -538,7 +562,7 @@ Y para el template (signin.component.html):
 
 #### Componente de datos del usuario (user-profile)
 
-Finalmente, en el componente de datos del usuario no utilizaremos un formulario, pero sí nuestro servicio AuthService y la clase ActivatedRoute de Angular, por lo que deberemos inyectarlos.
+En el componente de datos del usuario no utilizaremos un formulario, pero sí nuestro servicio AuthService y la clase ActivatedRoute de Angular, por lo que deberemos inyectarlos.
 
 La clase ActivatedRoute nos provee información sobre la ruta que actualmente se encuentra cargada, y la utilizaremos para obtener el ID del usuario logueado, del que queremos mostrar los datos. en la documentación oficial de Angular hay más información sobre [ActivatedRoute](https://angular.io/api/router/ActivatedRoute), sus propiedades y métodos.
 
@@ -581,4 +605,71 @@ Y para el template user-profile.component.html:
     </div>
   </div>
 </div>
+```
+### 10. Agregando el menú de navegación
+
+Finalmente, vamos a agregar un menú de navegación que muestre el contenido correspondiente segń la vista en la que se encuentre el usuario.
+
+Para este paso, modificaremos el contenido del componente AppComponent de nuestra aplicación.
+
+Antes que nada, dirígete al template `app.component.html`, elimina el código inicial que genera el CLI automáticamente y reemplaza su contenido con el sigueinte código HTML:
+```
+<div
+  class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm fixed-top">
+  <h5 class="my-0 mr-md-auto font-weight-normal">Angular Mean Auth</h5>
+  <nav class="my-2 my-md-0 mr-md-3">
+    <a *ngIf="this.authService.isLoggedIn" class="p-2 text-dark">User Profile</a>
+    <a *ngIf="!this.authService.isLoggedIn" class="p-2 text-dark" routerLinkActive="active" routerLink="/log-in">Sign
+      in</a>
+  </nav>
+  <a *ngIf="!this.authService.isLoggedIn" class="btn btn-outline-primary" routerLinkActive="active"
+     routerLinkActive="active" routerLink="/sign-up">Sign up</a>
+  <button (click)="logout()" *ngIf="this.authService.isLoggedIn" type="button" class="btn btn-danger">Logout</button>
+</div>
+
+<router-outlet></router-outlet>
+```
+
+En este template hemos utilizado la directiva `ngIf` para mostrar u ocultar los elementos de la vista depeniendo del estado de autenticación del usuario.
+
+También hemos utilizado un output binding en el atributo `click` del botón para ejecutar la función `logout` cuando el usuario quiera salir del sitio.
+
+Para finalizar nuestro sitio, vamos a crear la función `logout` en nuestro componente, que llamará al método `doLogout` del servicio `AuthService` (por lo que también deberemos inyectarlo en nuestro controlador):
+
+```
+import { Component } from '@angular/core';
+import { AuthService } from './shared/auth.service';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+
+export class AppComponent {
+  constructor(public authService: AuthService) { }
+
+  logout() {
+    this.authService.doLogout();
+  }
+}
+```
+
+## EJECUTAR EL PROYECTO
+
+Ahora que el proyecto está listo, vamos ejecutarlo y probarlo. Debemos ejecutar tanto el Back End como el Front End.
+
+Comenzamos por el Back End. Diríjete al directorio en que clonaste el proyecto que cotiene la API y ejecuta:
+```
+npm run nodemon
+```
+
+Ahora ejecuta el Front End desde el directorio de nuestro proyecto Angular con el siguiente comando:
+```
+ng serve
+```
+
+Finalmente, abre la siguiente URl en el navegador para comenzar a utilizar la app:
+```
+localhost:4200
 ```
