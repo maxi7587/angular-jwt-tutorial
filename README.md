@@ -302,7 +302,7 @@ Con el siguiente comando agregamos un guard en la carpeta shared:
 ```
 ng g guard shared/auth
 ```
-El CLI te preguntará qué tipo de Guard quieres crear. En este case, crearemos un guard del tipo CanActivate, por lo que debes seleccionarlo.
+El CLI te preguntará qué tipo de Guard quieres crear. En este case, crearemos un Guard del tipo CanActivate, por lo que debes seleccionarlo.
 
 Una vez generado, agrega el siguiente código:
 ```
@@ -330,8 +330,10 @@ export class AuthGuard implements CanActivate {
   }
 }
 ```
- 
-Una vez creado el Guard, modifica nuevamente la constante routes en el archivo app-routing.module.ts para proteger la ruta user-profile/:id. Debería quedar un código similar a este:
+
+Como se puede ver, hemos inyectado el servicio `AuthService` en el contructor del Guard para utilizarlo dentro del método `canActivate`. Dentro de este método, utilizamos el getter `isLoggedIn` para saber si el usuario está autenticado. En caso de que lo esté, el método devuelve true (verdadero), caso contrario, redirige hacia la páina de autenticación (`/log-in`).
+
+A continuación, agregaremos el Guard a la ruta `/user-profile/:id` para protegerla. Al hacerlo, Angular llamará el método canActivate definido en el Guard cada vez que queramos acceder a dicha ruta, y bloqueará el acceso en caso de que la respuesta no sea verdadera. Para hacer esto, modifica nuevamente la constante `routes` en el archivo `app-routing.module.ts`. Debería quedar un código similar a este:
 ```
 ...
 const routes: Routes = [
@@ -341,4 +343,242 @@ const routes: Routes = [
   { path: 'user-profile/:id', component: UserProfileComponent, canActivate: [AuthGuard] }
 ];
 ...
+```
+
+### 9. Agregado el código para nuestras vistas
+
+Ahora que tenemos los servicios y estucruta listos, vamos a agregar el código para cada una de las páginas de nuestro sitio en los componentes correspondientes.
+
+Para los formularios, utilizaremos los módulos ReactiveFormsModule y FormsModule que nos provee Angular. Si están interesado en aprener más  sobre estos módulos, [este enlace](https://angular.io/guide/reactive-forms) te lleva a la documentación oficial.
+
+El primer paso para utilizar Reactive Forms es agregar estos módulos en el módulo principal de nuestra aplicación (app.module.ts), o en el módulo que queramos utilizarlos. Para hacer esto, hay que importarlos y agregarlos en la lista de imports del módulo:
+```
+...
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+  
+@NgModule({
+  ...
+  imports: [
+    ...
+    ReactiveFormsModule,
+    FormsModule
+  ],
+  ...
+})
+...
+```
+
+Ahora, podemos utilizar Reactive Forms en nuestros componentes para crear los formularios necesarios. Comenzaremos por el formulario de registro.
+
+#### Formulario de registro 
+
+Para agregar el formulario de registro en el componente signup.component.ts (dentro de la carpeta components), debemos importar y agregar la clase FormBuilder en el constructor. Esta clase nos provee las funcionalidades necesarias para crear formulario reactivos y utilizarlos en nuestro template.
+
+También utilizaremos el método `signUp` definido en nuestro servicio AuthService (para enviar los datos del formulario al servidor), por lo que igualmente deberemos inyectarlo.
+
+Agrea el siguiente código en el archivo signup.component.ts y observa cómo se crea el controlador del formulario (con el método group) y cómo podemos utilizar su valor para enviar los datos completados por el usuario al Back End (en el método registerUser). 
+```
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup } from '@angular/forms';
+import { AuthService } from '../../shared/auth.service';
+import { Router } from '@angular/router';
+
+@Component({
+  selector: 'app-signup',
+  templateUrl: './signup.component.html',
+  styleUrls: ['./signup.component.scss'],
+})
+export class SignupComponent implements OnInit {
+  signupForm: FormGroup;
+  constructor(
+    public fb: FormBuilder,
+    public authService: AuthService,
+    public router: Router
+  ) {
+    this.signupForm = this.fb.group({
+      name: [''],
+      email: [''],
+      mobile: [''],
+      password: [''],
+    });
+  }
+
+  ngOnInit() {}
+
+  public registerUser() {
+    this.authService.signUp(this.signupForm.value).subscribe((res) => {
+      if (res.result) {
+        this.signupForm.reset();
+        this.router.navigate(['log-in']);
+      }
+    },
+      (err) => {
+      console.log(err)
+      alert(err.msg || err);
+      });
+  }
+}
+```
+
+Una vez creado definida la estructura de los datos del formulario en nuestro controador, es necesario mostrar los campos en el template, junto con el botón para enviar los datos, y enlazarlos con nuestro formulario reactivo. Angular, en el módulo ReactiveForms, provee algunas directivas que nos permitirán enlazar el contenido del formulario y los diferentes campos en el código HTML con el formulario definido en nuestro controlador.
+
+Para esto, editaremos el contenido del archivo signup.component.html con el siguiente código:
+```
+<div class="auth-wrapper">
+  <form
+    class="form-signin"
+    [formGroup]="signupForm"
+    (ngSubmit)="registerUser()"
+  >
+    <h3 class="h3 mb-3 font-weight-normal text-center">Please sign up</h3>
+    <div class="form-group">
+      <label>Name</label>
+      <input
+        type="text"
+        class="form-control"
+        formControlName="name"
+        placeholder="Enter name"
+        required
+      />
+    </div>
+    <div class="form-group">
+      <label>Email address</label>
+      <input
+        type="email"
+        class="form-control"
+        formControlName="email"
+        placeholder="Enter email"
+        required
+      />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input
+        type="password"
+        class="form-control"
+        formControlName="password"
+        placeholder="Password"
+        required
+      />
+    </div>
+    <button type="submit" class="btn btn-block btn-primary">Sign up</button>
+  </form>
+</div>
+```
+
+En este bloque, dentro e los atributos de las etiquetas HTML, hemos utilizado las siguientes directivas de Angular (Directives):
+- `formGroup`, para conectar el formulario con el modelo de datos definido en nuestro controlador (mediante el método `fb.group`)
+- `ngSubmit`, para ejecutar una función específica cuando se envía en formulario (en nuestro caso, `registerUser`)
+- `formControlName`, para enlazar cada uno de los inputs con la propiedad correspondiente en el modelo definido en el controlador.
+
+En la documentación de [FormsModule](https://angular.io/api/forms/FormsModule) y [ReactiveFormsModule](https://angular.io/guide/reactive-forms) hay información más detallada sobre estas y otras directivas que podemos utilizar en los formularios.
+
+#### Componente de autenticación (login)
+
+Al igual que en el componente de registro (signup), utilizaremos Reactive Forms para crear nuestro formulario de autenticación. Para una breve referencia sobre las directivas y clases utilizadas, vale lo mismo que se dijo sobre el formulario de registro.
+
+Este es el código para el archivo `signin.component.ts`:
+```
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup } from '@angular/forms';
+import { AuthService } from '../../shared/auth.service';
+import { Router } from '@angular/router';
+@Component({
+  selector: 'app-signin',
+  templateUrl: './signin.component.html',
+  styleUrls: ['./signin.component.scss'],
+})
+export class SigninComponent implements OnInit {
+  signinForm: FormGroup;
+  constructor(
+    public fb: FormBuilder,
+    public authService: AuthService,
+    public router: Router
+  ) {
+    this.signinForm = this.fb.group({
+      email: [''],
+      password: [''],
+    });
+  }
+  ngOnInit() {}
+  loginUser() {
+    this.authService.signIn(this.signinForm.value);
+  }
+}
+```
+
+Y para el template (signin.component.html):
+```
+<div class="auth-wrapper">
+  <form class="form-signin" [formGroup]="signinForm" (ngSubmit)="loginUser()">
+    <h3 class="h3 mb-3 font-weight-normal text-center">Please sign in</h3>
+    <div class="form-group">
+      <label>Email</label>
+      <input
+        type="email"
+        class="form-control"
+        formControlName="email"
+        placeholder="Enter email"
+        required
+      />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input
+        type="password"
+        class="form-control"
+        formControlName="password"
+        placeholder="Password"
+      />
+    </div>
+    <button type="submit" class="btn btn-block btn-primary">Sign in</button>
+  </form>
+</div>
+```
+
+#### Componente de datos del usuario (user-profile)
+
+Finalmente, en el componente de datos del usuario no utilizaremos un formulario, pero sí nuestro servicio AuthService y la clase ActivatedRoute de Angular, por lo que deberemos inyectarlos.
+
+La clase ActivatedRoute nos provee información sobre la ruta que actualmente se encuentra cargada, y la utilizaremos para obtener el ID del usuario logueado, del que queremos mostrar los datos. en la documentación oficial de Angular hay más información sobre [ActivatedRoute](https://angular.io/api/router/ActivatedRoute), sus propiedades y métodos.
+
+También utilizaremos la interpolación de cadenas (string interpolation) para agregar contenido dinámicamente en el HTML nuestro componente. Ésto se logra mediante la utilización de llaves dobles ({{}}) en nuestro código HTML, dentro del cuál podemos utiliar cualquier expresion o variable definida en nuestro componente.
+
+Éste es el código para nuestro componente user-profile.component.ts:
+```
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { AuthService } from './../../shared/auth.service';
+import {User} from "../../shared/entities/user";
+@Component({
+  selector: 'app-user-profile',
+  templateUrl: './user-profile.component.html',
+  styleUrls: ['./user-profile.component.scss'],
+})
+export class UserProfileComponent implements OnInit {
+  currentUser?: User;
+  constructor(
+    public authService: AuthService,
+    private actRoute: ActivatedRoute
+  ) {
+    let id = this.actRoute.snapshot.paramMap.get('id');
+    this.authService.getUserProfile(id).subscribe((res) => {
+      this.currentUser = res.msg;
+    });
+  }
+  ngOnInit() {}
+}
+```
+
+Y para el template user-profile.component.html:
+```
+<div class="container">
+  <div class="row">
+    <div class="inner-main">
+      <h2 class="mb-4">User Profile</h2>
+      <p><strong>Name:</strong> {{this.currentUser?.name}}</p>
+      <p><strong>Email:</strong> {{this.currentUser?.email}}</p>
+    </div>
+  </div>
+</div>
 ```
