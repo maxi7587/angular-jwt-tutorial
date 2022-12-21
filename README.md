@@ -1,5 +1,5 @@
 # angular-jwt-tutorial
-Tutorial sobre Angular + JWT (traducción/adaptación de https://www.positronx.io/angular-jwt-user-authentication-tutorial/) 
+Tutorial sobre Angular + JWT (Adaptación de https://www.positronx.io/angular-jwt-user-authentication-tutorial/) 
 
 ## Introducción
 En este tutorial vamos a crear un sistema de autenticación de usuario en Angular utilizando JSON Web Token (JWT). Generalmente, el desarrollo de una aplicación se realiza por partes, agregando una funcionalidad a la vez. En un proyecto real, no seguiremos el mismo orden que se dispone en el tutorial, pero por razones de claridad y brevedad, realizaremos el proceso trabajando en un archivo a la vez hasta completar el contenido de esa clase (dado que conocemos de antemano la totalidad de lo que queremos implementar y cómo vamos a hacerlo).
