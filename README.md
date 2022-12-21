@@ -2,13 +2,13 @@
 Tutorial sobre Angular + JWT (traducción/adaptación de https://www.positronx.io/angular-jwt-user-authentication-tutorial/) 
 
 ## Introducción
-En este tutorial vamos a crear un sistema de autenticación de usuario seguro en Angular utilizando JSON Web Token (JWT). Este proceso, por lo general se realiza por partes, agregando una funcionalidad a la vez. En un proyecto real, no seguiremos el mismo orden que se dispone en el tutorial, pero por razones de claridad y brevedad, realizaremos el proceso trabajando en un archivo a la vez hasta completar el contenido de esa clase, conociendo la totalidad de lo que queremos implementar y cómo hacerlo.
+En este tutorial vamos a crear un sistema de autenticación de usuario en Angular utilizando JSON Web Token (JWT). Generalmente, el desarrollo de una aplicación se realiza por partes, agregando una funcionalidad a la vez. En un proyecto real, no seguiremos el mismo orden que se dispone en el tutorial, pero por razones de claridad y brevedad, realizaremos el proceso trabajando en un archivo a la vez hasta completar el contenido de esa clase (dado que conocemos de antemano la totalidad de lo que queremos implementar y cómo vamos a hacerlo).
 
-Como back-end para el sistema de autenticación de usuario, clonaremos una API RESTful sencilla desarrollada utilizando node, express y mongoDB (quienes estén interesados en cómo realizarla pueden visitar [este tutorial](https://www.positronx.io/build-secure-jwt-token-based-authentication-api-with-node/)).
+Como Back End para el sistema de autenticación de usuario, clonaremos una API RESTful sencilla desarrollada utilizando node, express y mongoDB (quienes estén interesados en cómo realizarla pueden visitar [este tutorial](https://www.positronx.io/build-secure-jwt-token-based-authentication-api-with-node/)).
 
 ## ¿Qué es JWT (token web JSON)?
 
-JWT se refiere a JSON Web Token. Es un token en forma de string validado y generado por un servidor web. Podmeos utilizar este token para transferir los datos de forma segura entre el cliente y el servidor, implemnetando y flujo que funcione de la siguiente manera:
+JWT se refiere a JSON Web Token. Es un token en forma de string validado y generado por un servidor web. Podmeos utilizar este token para transferir los datos de forma segura entre el cliente y el servidor, implementando un flujo que funcione de la siguiente manera:
 1. La información del usuario (nombre de usuario y contraseña) se envía al servidor mediante una solicitud HTTP POST al servidor web.
 2. El servidor web valida la información del usuario, crea un token y lo envía de regreso al cliente.
 3. El cliente almacena ese token en el almacenamiento local o en una sesión y, en las próximas llamadas HTTP, lo agrega en el encabezado (headers).
@@ -31,13 +31,14 @@ Nuestra aplicación de autenticación de usuario angular tendrá tres páginas:
 - registro
 - perfil de usuario
 
-Hay varias formas estructurar el proyecto en cuanto a los directorios y archivos. Dado que se trata de un proyecto sencillo, utilizaremos, dentro del directorio `app`:
+Hay varias formas estructurar el proyecto en cuanto a la estructura de archivos. Dado que se trata de un proyecto sencillo, utilizaremos, dentro del directorio `app`:
 - un directorio `components`, en el que se ubicarán los componentes (en nuestro caso, crearemos un componente por página, pero suelen crearse componentes reutilizables que pueden ser utilizados en varias páginas).
 - un directorio `shared`, que contendrá los servicios y clases de uso común en distintos componentes o vistas.
 
+## Desarrollo de la aplicación
 ### 1. Clonar el Back End que utilizaremos para nuestro proyecto
 
-Como back end, utilizaremos una pequeña API REST que provee las siguientes funcionalidades básicas:
+Antes de comenzar con el desarrollo de nuetra SPA en Angular, levantaremos un Back End local que nos proveerá los servicios necesarios. Utilizaremos una pequeña API REST que provee las siguientes funcionalidades básicas:
 - Regsitro
 - Inicio de sesión
 - Almacenar y obtener datos del usuario
@@ -53,7 +54,7 @@ Ahora sí, para clonar y ejecutar el proyecto, puedes seguir estos pasos desde l
 7. Agregar el comando nodemon dentro de la propiedad scripts en el archivo `package.json` (ejemplo: `"scripts": {... "nodemon": "nodemon"}`).
 8. Ejecutar el servidor con el comando `npm run nodemon`.
 
-A continuación se detallan la interfaz expuesta por esta API que acabamos de ejecutar:
+A continuación se detalla la interfaz expuesta por la API que acabamos de ejecutar:
 |         Métodos             |        URL de la API       |
 |:---------------------------:|:--------------------------:|
 | GET (Lista de usuarios)     | /api                       |
@@ -63,7 +64,7 @@ A continuación se detallan la interfaz expuesta por esta API que acabamos de ej
 | PUT (Actualizar Usuario)    | /api/update-user/:id       |
 | ELIMINAR (Eliminar Usuario) | /api/delete-user/:id       |
 
-utilizaremos estos endpoints en nuestro Front End para generar, validar y mostrar la información de los usuarios.
+Utilizaremos estos endpoints en nuestro Front End para generar, validar y mostrar la información de los usuarios.
 
 ### 2. Inicializar el proyecto utilizando Angular CLI
 
