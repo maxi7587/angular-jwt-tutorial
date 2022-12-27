@@ -617,7 +617,7 @@ Antes que nada, dirígete al template `app.component.html`, elimina el código i
 ```
 <div
   class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm fixed-top">
-  <h5 class="my-0 mr-md-auto font-weight-normal">Angular Mean Auth</h5>
+  <h5 class="my-0 mr-md-auto font-weight-normal">Angular Auth</h5>
   <nav class="my-2 my-md-0 mr-md-3">
     <a *ngIf="this.authService.isLoggedIn" class="p-2 text-dark">User Profile</a>
     <a *ngIf="!this.authService.isLoggedIn" class="p-2 text-dark" routerLinkActive="active" routerLink="/log-in">Sign
@@ -673,4 +673,99 @@ ng serve
 Finalmente, abre la siguiente URl en el navegador para comenzar a utilizar la app:
 ```
 localhost:4200
+```
+
+## Extra: agregando tests
+
+Angular, por defecto, utiliza Karma como herramienta para ejecutar los tests de nuestra app. Si nuestra aplicación no requiere configuraciones especiales, el framework también gestiona la configuración de Karma basándose en el contenido del archivo `angular.json`.
+
+Este enlace lleva a la documentación oficial sobre [testing en Angular](https://angular.io/guide/testing).
+
+### Test de un componente
+
+Al crear un componente con el CLI de Angular, se creará un archivo `*.spec.ts` junto a los archivos del controlador, template y estilos. Este archivo se utiliza para las pruebas unitarias de nuestro componente/servicio.
+
+Este enlace lleva a la documentación oficial sobre [pruebas de componentes en Angular](https://angular.io/guide/testing-components-basics).
+
+El este caso, agregaremos pruebas unitarias al componente `AppComponent`. Como este componente (y su contenido) fue generado automáticamente cuando creamos la aplicación con el CLI, debemos borrar todos los tests existentes antes de proceder (solo dejaremos el primer caso de uso, cuya descripción es `'should create the app'`).
+
+Si intentamos ejecutar este test ahora, fallará. Esto se debe a que nuestro componente tiene algunas dependencias que es necesario inyectar, pero la suite de testing no es capaz de resolver. Podemos comprobarlo con el siguiente comando:
+```
+ng test --include='**/app.component.spec.ts'
+```
+
+Para solucionarlo, debemos agregar las dependencias requeridas por nuestro componente. Para hacerlo debemos modificar la TestBed provista en el test.
+
+Dando un vistazo al archivo `app.component.ts`, notamos que el único servicio que se está inyectado es nuestro `AuthService`. Podemos utilizar varios métodos para resolver esta dependencia, dos de ellas son:
+- utilizar un mock del servicio
+- inyectar el servicio real (y sus dependencias) y utilizar spies sobre sus métodos
+
+En nuestro caso, tomaremos el primer camino y generaremos un mock de nuestro servicio. Agrega el siguiente código en el archivo de test para crear el mock:
+
+```
+class MockAuthService {
+  doLogout = () => {}
+}
+```
+
+Una vez creado el mock, podemos configurar correctamente los providers para nuestro test (dentro de la TestBed ubicada el bloque beforeEach):
+
+```
+  await TestBed.configureTestingModule({
+    imports: [
+      RouterTestingModule
+    ],
+    declarations: [
+      AppComponent
+    ],
+    providers: [
+      { provide: AuthService, useClass: MockAuthService }
+    ]
+  }).compileComponents();
+```
+
+Finalmente, procedemos a agregar algunos tests sobre nuestro componente para verificar algunos comportamientos:
+- Que el componente funciona
+- Que el título se muestra correctamente
+- Que el botón de "Sign in" (login) se muestra correctamente
+- Que al ejecutar la función logout, se llama al método doLogout de nuestro AuthService (en este caso, el mock)
+
+Este es el código para los ejemplos (en la documentación de Angular hay otros ejemplos para testear tanto [componentes](https://angular.io/guide/testing-components-basics) como [servicios](https://angular.io/guide/testing-services)):
+
+```
+  it('should create the app', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.componentInstance;
+    expect(app).toBeTruthy();
+  });
+
+  it('should render title', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('h5')?.textContent).toContain('Angular Auth');
+  });
+
+  it('should render SignIn', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const links = compiled.querySelectorAll('a');
+    expect(links.item(0).textContent).toContain('Sign in')
+  });
+
+  it('' +
+    'should logout', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const componentInstance = fixture.componentInstance;
+    const logoutSpy = spyOn(componentInstance.authService, 'doLogout');
+    fixture.componentInstance.logout();
+    expect(logoutSpy).toHaveBeenCalled();
+  });
+```
+
+Ahora sí, podemos ejecutar nuevamente nuestro test y corroborar que todo funciona según lo esperado:
+```
+ng test --include='**/app.component.spec.ts'
 ```
