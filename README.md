@@ -166,7 +166,7 @@ import {
   HttpErrorResponse,
 } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { User } from "./entities/user";
+import { User } from "./user";
 
 @Injectable({
   providedIn: 'root',
@@ -574,7 +574,7 @@ También utilizaremos la interpolación de cadenas (string interpolation) para a
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from './../../shared/auth.service';
-import {User} from "../../shared/entities/user";
+import {User} from "../../shared/user";
 @Component({
   selector: 'app-user-profile',
   templateUrl: './user-profile.component.html',
@@ -644,7 +644,7 @@ import { AuthService } from './shared/auth.service';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  styleUrls: ['./app.component.scss']
 })
 
 export class AppComponent {

@@ -7,7 +7,7 @@ import {
   HttpErrorResponse,
 } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { User } from "./entities/user";
+import { User } from "./user";
 
 @Injectable({
   providedIn: 'root',
