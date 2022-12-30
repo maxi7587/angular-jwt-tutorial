@@ -8,21 +8,33 @@ Como Back End para el sistema de autenticación de usuario, clonaremos una API R
 
 ## ¿Qué es JWT (token web JSON)?
 
-JWT se refiere a JSON Web Token. Es un token en forma de string validado y generado por un servidor web. Podmeos utilizar este token para transferir los datos de forma segura entre el cliente y el servidor, implementando un flujo que funcione de la siguiente manera:
+JWT se refiere a JSON Web Token. Es un token en forma de string validado y generado por un servidor web, cuya especificación está definida en la [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519).
+
+Podemos utilizar este token para transferir los datos de forma segura entre el cliente y el servidor, implementando un flujo que funcione de la siguiente manera:
 1. La información del usuario (nombre de usuario y contraseña) se envía al servidor mediante una solicitud HTTP POST al servidor web.
 2. El servidor web valida la información del usuario, crea un token y lo envía de regreso al cliente.
 3. El cliente almacena ese token en el almacenamiento local o en una sesión y, en las próximas llamadas HTTP, lo agrega en el encabezado (headers).
 4. El servidor verifica que el token sea válido y devuelve la respuesta al cliente.
 
+El token consta de tres partes divididas por un punto:
+1. El encabezado: se trata de un JSON que contiene información sobre el tipo de token y el algoritmo utilizado para crear la firma (tercera parte)
+2. El cuerpo o payload: es un JSON con información sobre el usuario, permisos y demás datos que sean útiles para la aplicación; en este JSON podemos incluir cualquier dato que creamos necesario.
+3. La firma: es un hash del encabezado y el cuerpo con el algoritmo indicado en el encabezado (utilizando una clave privada).
+
+Para formar el token, estos tres campos son codificados con el algoritmo [Base64URL](https://www.base64url.com/) (y así convertidos en un string corto) y unidos por un punto.
+
+Hay sitio como [jwt.io](https://www.jwt.io/) que nos permiten decodificar el algoritmo desde el navegador par inspeccionar los tokens, así como también librerías para FE con esta misma funcionalidad.
+
 ## Ejemplo de autenticación de usuario utilizando Angular y JWT
 
 Se pretende realizar un proyecto que cumpla con los siguientes requisitos:
-- El usuario debe poder iniciar sesión
 - El usuario debe poder registrarse
-- Ocultar/mostrar elementos del menú según el estado de autenticación
-- Restringir el acceso del usuario a la página de perfil de usuario cuando el usuario no haya iniciado sesión.
-- Almacenar el token JWT en el almacenamiento local para administrar la sesión del usuario en Angular
-- Enviar el token obtenido en el proceso de autenticación en un encabezado de autorización usando la clase `HttpInterceptor`.
+- El usuario debe poder iniciar sesión
+- Los usuarios logueados deben poder acceder a una página donde se muestre el nombre y el email del usuario (página de perfil)
+- El sitio debe tener un menú que se muestre en todas las páginas, con los botones/enlaces para que el usuario pueda registrarse, loguearse/entrar o desloguearse/salir.
+- Los botones para registrarse y loguearse/entrar solo deben mostrarse cuando el usuario no está logueado
+- El botón para desloguearse/salir solo debe mostrarse si el usuario está logueado
+- Los usuarios que no hayan iniciado sesión no deben poder acceder a la página de perfil de usuario
 
 ## Estructura de la aplicación
 
@@ -34,6 +46,11 @@ Nuestra aplicación de autenticación de usuario angular tendrá tres páginas:
 Hay varias formas estructurar el proyecto en cuanto a la estructura de archivos. Dado que se trata de un proyecto sencillo, utilizaremos, dentro del directorio `app`:
 - un directorio `components`, en el que se ubicarán los componentes (en nuestro caso, crearemos un componente por página, pero suelen crearse componentes reutilizables que pueden ser utilizados en varias páginas).
 - un directorio `shared`, que contendrá los servicios y clases de uso común en distintos componentes o vistas.
+
+Además, para implementar algunas de las funcionalidades mencionadas anteriormente, utilizaremos algunos recursos provistos por el framework o el navegador:
+- Para almacenar el token JWT (y poder utilizarlo en el flujo de autenticación), utilizaremos la API de localStorage, que nos permite almacenar conjuntos de clave valor en el navegador y acceder a ellos desde nuestro sitio
+- Para agregar el token a los request enviados al servidor utilizaremos la interfaz `HttpInterceptor` provista por angular, que nos permite modificar los requests antes de que sean enviados.
+- Para proteger la ruta de perfil de usuario, utilizaremos la interfaz CanActivate provista por Angular (Guard).
 
 ## Desarrollo de la aplicación
 ### 1. Clonar el Back End que utilizaremos para nuestro proyecto
@@ -65,6 +82,8 @@ A continuación se detalla la interfaz expuesta por la API que acabamos de ejecu
 | ELIMINAR (Eliminar Usuario) | /api/delete-user/:id       |
 
 Utilizaremos estos endpoints en nuestro Front End para generar, validar y mostrar la información de los usuarios.
+
+**NOTA IMPORTANTE:** la ruta de creación de usuario requiere que utilicemos una contraseña de 8 caracteres, por lo que fallará si utilizamos una de menor longitud. Los mensajes del back-end en este caso son genéricos y no indican el error específico, por lo que es importante tenerlo en cuentra. 
 
 ### 2. Inicializar el proyecto utilizando Angular CLI
 
@@ -166,7 +185,7 @@ import {
   HttpErrorResponse,
 } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { User } from "./entities/user";
+import { User } from "./user";
 
 @Injectable({
   providedIn: 'root',
@@ -574,7 +593,7 @@ También utilizaremos la interpolación de cadenas (string interpolation) para a
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from './../../shared/auth.service';
-import {User} from "../../shared/entities/user";
+import {User} from "../../shared/user";
 @Component({
   selector: 'app-user-profile',
   templateUrl: './user-profile.component.html',
@@ -644,7 +663,7 @@ import { AuthService } from './shared/auth.service';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  styleUrls: ['./app.component.scss']
 })
 
 export class AppComponent {
